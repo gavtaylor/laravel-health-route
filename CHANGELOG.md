@@ -1,6 +1,8 @@
 # Release Notes
 
-## [Unreleased](https://github.com/gavtaylor/laravel-health-route/compare/v0.1.0...main)
+## [Unreleased](https://github.com/gavtaylor/laravel-health-route/compare/v0.2.0...main)
+
+## [v0.2.0](https://github.com/gavtaylor/laravel-health-route/compare/v0.1.0...v0.2.0) - 2026-08-28
 
 - New bundled checks: `StorageWritableCheck`, `LogWritableCheck`, `EnvironmentCheck`.
 - The default HTML view shows `-` for a check with no message, instead of an empty cell (JSON keeps `null`).
