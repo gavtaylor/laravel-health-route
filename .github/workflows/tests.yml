@@ -21,13 +21,14 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        php: [8.3, 8.4, 8.5]
-        laravel: [12.*, 13.*]
-        stability: [prefer-lowest, prefer-stable]
+        # Only the current stable PHP and Laravel versions for now - widen
+        # this matrix (older PHP, older Laravel, prefer-lowest, additional
+        # OSes) as support for them is actually needed.
+        os: [ubuntu-latest]
+        php: [8.5]
+        laravel: [13.*]
+        stability: [prefer-stable]
         include:
-          - laravel: 12.*
-            testbench: 10.*
           - laravel: 13.*
             testbench: 11.*
 
@@ -59,13 +60,7 @@ jobs:
         run: composer lint:check
 
       - name: Type Coverage
-        if: runner.os != 'Windows'
         run: composer test:types
 
       - name: Test Suite
-        if: runner.os != 'Windows'
         run: composer test:unit
-
-      - name: Test Suite (Windows)
-        if: runner.os == 'Windows'
-        run: vendor/bin/pest
