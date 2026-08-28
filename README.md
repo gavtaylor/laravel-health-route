@@ -6,8 +6,6 @@ Laravel core ships a built-in health check route (`health:` in `withRouting()`):
 
 This package **is that same route** — same event, same failure contract, same default path — with a customisable HTML view and a library of opt-in checks layered on top. Remove the package and add `health: '/up'` back to `withRouting()`, and any client that only reads `status` sees no change in behaviour.
 
-It is not a competing `/health` endpoint, and not a general-purpose monitoring product. If you need application-wide monitoring, dashboards, and alerting, look at [spatie/laravel-health](https://github.com/spatie/laravel-health) instead — a different, larger product solving a different problem. This package's gap is narrower: *I want the native route, but need the HTML customisable, plus a few structured checks.*
-
 ## Installation
 
 ```bash
@@ -98,19 +96,19 @@ The endpoint is public by default, matching core. Each method below is independe
 ```php
 // config/health-route.php
 'access' => [
+    'bypass_when_local' => false,
     'basic_auth' => ['username' => env('HEALTH_ROUTE_BASIC_AUTH_USERNAME'), 'password' => env('HEALTH_ROUTE_BASIC_AUTH_PASSWORD')],
     'token' => ['header' => 'X-Health-Token', 'value' => env('HEALTH_ROUTE_TOKEN_VALUE')],
     'allowed_ips' => ['10.0.0.0/8', '203.0.113.5'],       // IPv4/IPv6, CIDR supported
     'allowed_hostnames' => ['monitor.example.ddns.net'],   // for callers on a dynamic IP
-    'bypass_when_local' => false,
 ],
 ```
 
+- **Local-development bypass** - explicit, off by default, checked against `app()->environment('local')` only, never the request's IP (which can be spoofed or misreported by a misconfigured proxy).
 - **Basic auth** - for monitoring tooling that can only authenticate with a username/password.
 - **Shared-secret header** - cheaper to rotate than credentials, never appears in a URL.
 - **Static IP/CIDR allowlist** - for infrastructure with fixed addresses.
 - **Dynamic hostname allowlist** - for a caller behind a DDNS record. Resolved via DNS and cached for the record's own TTL, so a lookup only happens once per TTL window. A failed lookup is cached briefly too, so a DNS outage doesn't turn every request into a slow one - PHP has no reliable built-in DNS timeout, so this is an accepted limitation: at most one unlucky request per outage pays the cost of a slow lookup.
-- **Local-development bypass** - explicit, off by default, checked against `app()->environment('local')` only, never the request's IP (which can be spoofed or misreported by a misconfigured proxy).
 
 All credential/token comparisons are timing-safe. An unconfigured method never accidentally authenticates - empty config never matches empty or absent credentials, and an empty allowlist never matches any IP.
 
@@ -136,7 +134,9 @@ For a cheaper first-line check than booting the framework at all:
 php artisan vendor:publish --tag=health-route-static
 ```
 
-This publishes a static `up.txt` file straight into `public/`, served by the web server directly - never a registered framework route, and never written automatically at request or boot time. Re-running the publish command never overwrites a file you've already customised (standard `vendor:publish` behaviour) - use `--force` if you want to reset it.
+This publishes a static `public/ping` file - hit `/ping` and the web server replies `pong` directly, without booting Laravel at all. Never a registered framework route, and never written automatically at request or boot time. Re-running the publish command never overwrites a file you've already customised (standard `vendor:publish` behaviour) - use `--force` if you want to reset it.
+
+Customise the filename via `static_filename` in the config file if you like, but don't set it to match `path` (the dynamic route) - most web servers serve an existing static file directly and would silently bypass the dynamic route entirely. The package logs a boot-time warning if it detects that.
 
 ## Testing
 

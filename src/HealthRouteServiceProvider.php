@@ -15,6 +15,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -52,7 +53,7 @@ final class HealthRouteServiceProvider extends ServiceProvider
         ], ['health-route', 'health-route-views']);
 
         $this->publishes([
-            __DIR__.'/../resources/static/up.txt' => public_path(config('health-route.static_filename', 'up.txt')),
+            __DIR__.'/../resources/static/ping' => public_path(config('health-route.static_filename', 'ping')),
         ], ['health-route-static']);
     }
 
@@ -65,6 +66,16 @@ final class HealthRouteServiceProvider extends ServiceProvider
         $path = (string) config('health-route.path', '/up');
 
         (new RouteCollisionWarning($this->app->make('router'), $path))->check();
+
+        $staticFilename = (string) config('health-route.static_filename', 'ping');
+
+        if ($staticFilename === ltrim($path, '/')) {
+            Log::warning(sprintf(
+                'gavtaylor/laravel-health-route: static_filename ("%s") matches the health route path. '.
+                'If published, most web servers will serve that static file directly and silently bypass the dynamic route. Choose a different static_filename.',
+                $staticFilename,
+            ));
+        }
 
         Route::get($path, HealthRouteController::class)->middleware(EnsureHealthRouteAccess::class);
 

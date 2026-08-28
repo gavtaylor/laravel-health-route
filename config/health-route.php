@@ -215,11 +215,15 @@ return [
     |--------------------------------------------------------------------------
     |
     | The filename used when publishing the optional static liveness file
-    | (php artisan vendor:publish --tag=health-route-static). Never written
-    | automatically - see the README.
+    | (php artisan vendor:publish --tag=health-route-static), served as a
+    | plain "pong" response straight from the public directory - no
+    | framework route, no config needed. Customise this if you like, but
+    | don't set it to match the `path` above: that's the dynamic route,
+    | this is a separate, cheaper static check and the two are meant to
+    | coexist rather than replace one another.
     |
     */
 
-    'static_filename' => env('HEALTH_ROUTE_STATIC_FILENAME', 'up.txt'),
+    'static_filename' => env('HEALTH_ROUTE_STATIC_FILENAME', 'ping'),
 
 ];
