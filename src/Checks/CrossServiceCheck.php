@@ -30,7 +30,11 @@ final class CrossServiceCheck implements Check
         $timeout = (int) config('health-route.checks_config.cross_service.timeout', 5);
 
         try {
-            $response = Http::timeout($timeout)->acceptJson()->get($url);
+            $response = Http::timeout($timeout)
+                ->connectTimeout(min(3, $timeout))
+                ->withoutRedirecting()
+                ->acceptJson()
+                ->get($url);
 
             if (! $response->successful()) {
                 return CheckResult::down($this->name(), sprintf('Received HTTP %d.', $response->status()));
@@ -40,6 +44,10 @@ final class CrossServiceCheck implements Check
 
             if ($status === 'down') {
                 return CheckResult::down($this->name(), 'The remote service reports itself as down.');
+            }
+
+            if ($status === 'degraded') {
+                return CheckResult::degraded($this->name(), 'The remote service reports itself as degraded.');
             }
 
             return CheckResult::up($this->name());

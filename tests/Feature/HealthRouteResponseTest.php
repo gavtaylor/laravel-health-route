@@ -94,6 +94,10 @@ it('omits the checks key entirely when no checks are configured, matching core b
     expect($response->json())->toBe(['status' => 'up']);
 });
 
+it('registers a named route for URL generation', function () {
+    expect(route('health-route', absolute: false))->toBe('/up');
+});
+
 it('never leaks an exception message from a check that throws', function () {
     config(['health-route.checks' => [ThrowingCheckStub::class]]);
 

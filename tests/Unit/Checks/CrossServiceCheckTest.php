@@ -20,6 +20,13 @@ it('is up when the remote service reports itself as up', function () {
     expect(app(CrossServiceCheck::class)->run()->status)->toBe(CheckStatus::Up);
 });
 
+it('is degraded when the remote service reports itself as degraded', function () {
+    config(['health-route.checks_config.cross_service.url' => 'https://other-service.test/up']);
+    Http::fake(['https://other-service.test/up' => Http::response(['status' => 'degraded'], 200)]);
+
+    expect(app(CrossServiceCheck::class)->run()->status)->toBe(CheckStatus::Degraded);
+});
+
 it('is down when the remote service reports itself as down', function () {
     config(['health-route.checks_config.cross_service.url' => 'https://other-service.test/up']);
     Http::fake(['https://other-service.test/up' => Http::response(['status' => 'down'], 500)]);

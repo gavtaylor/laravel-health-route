@@ -27,13 +27,14 @@ Use this skill when a Laravel application needs to integrate the Health Route fo
 
 - **Custom HTML**: publish the view (`--tag=health-route-views`) and edit `resources/views/vendor/health-route/default.blade.php` directly. It receives `$exception` (`Throwable|null`), `$down` (`bool`), `$checks` (`list<CheckResult>`). Never invent new variables here - treat that set as a fixed contract.
 - **Checks**: add fully-qualified check class names to `checks` in `config/health-route.php`. Never enable a check the app doesn't actually need - each one is opt-in for a reason. Built-in checks live under `GavTaylor\HealthRoute\Checks\*`; a custom check implements `GavTaylor\HealthRoute\Checks\Contracts\Check` (`name(): string`, `run(): CheckResult`) and must never put raw exception messages, file paths, or stack traces into a `CheckResult` - the endpoint is public by default.
-- **Access control**: configure under `access` in the config file. Multiple methods compose with OR - enabling more than one is a deliberate choice, not redundancy. Never suggest `bypass_when_local` as a way to skip access control anywhere other than local development.
-- **Status header on other routes**: attach the `health-status` middleware alias; it only works if `status_header.enabled` is `true` in config.
-- **Static liveness file**: `php artisan vendor:publish --tag=health-route-static` - a one-time, manual step. Never suggest generating this file at runtime or on every deploy without `--force` if the app may have customised it.
+- **Access control**: configure under `access` in the config file. Multiple methods compose with OR. Never suggest `bypass_when_local` outside local development. Access control hides the response body only; checks still run. Do not enable outbound HTTP, cross-service, or `composer audit` checks unless that cost on every request is acceptable. IP allowlists need a correct `TrustProxies` setup.
+- **Status header on other routes**: attach the `health-status` middleware alias; it only works if `status_header.enabled` is `true` in config. It reflects configured checks, not `DiagnosingHealth`.
+- **Static liveness file**: `php artisan vendor:publish --tag=health-route-static` publishes `public/ping`. Never suggest generating this file at runtime. Never set `static_filename` to the same public path as `path` - the package logs a critical message at boot time if it detects that, but still boots, so it's easy to miss. The static file is not access-controlled.
+- **Named route**: `route('health-route')`. Extra middleware aliases or classes go in `health-route.middleware`.
 
 ### 3. Verify
 
-- Hit the configured path with and without `Accept: application/json` and confirm the response shape matches what was configured (checks array present only if checks are configured).
+- Hit the configured path with `Accept: application/json` (JSON, matching core's `expectsJson()`) and without it (HTML), and confirm the response shape matches what was configured (checks array present only if checks are configured).
 - If checks were added, confirm a forced failure (e.g. temporarily breaking the dependency) produces a `degraded` or `down` result as intended, and that the message contains no leaked exception detail.
 
 ## Rules, References, and Templates
@@ -53,3 +54,4 @@ Read before executing:
 - do not document package internals here; keep the skill focused on adoption in Laravel apps
 - do not re-implement the native `health:` routing argument alongside this package - pick one
 - do not put exception detail, stack traces, or file paths into a check's message or context
+- do not publish the static liveness file at the same path as the dynamic health route

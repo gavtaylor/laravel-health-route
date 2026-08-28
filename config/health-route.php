@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use GavTaylor\HealthRoute\Access\BasicAuthGate;
+use GavTaylor\HealthRoute\Access\DynamicIpAllowlistGate;
+use GavTaylor\HealthRoute\Access\LocalEnvironmentBypassGate;
+use GavTaylor\HealthRoute\Access\SharedSecretHeaderGate;
+use GavTaylor\HealthRoute\Access\StaticIpAllowlistGate;
+
 return [
 
     /*
@@ -117,8 +123,10 @@ return [
         ],
 
         'dependency_advisory' => [
-            // Advisory data is expensive to gather, so it's cached far
-            // longer than the shared checks_cache_seconds window above.
+            // Wraps `composer audit` on the request path (cached for this
+            // many hours). Needs a composer binary on PATH; typical production
+            // images do not have one. Prefer a scheduled command that writes a
+            // cache key, or leave this check disabled.
             'cache_hours' => env('HEALTH_ROUTE_DEPENDENCY_ADVISORY_CACHE_HOURS', 12),
         ],
 
@@ -146,6 +154,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Route name
+    |--------------------------------------------------------------------------
+    |
+    | The name registered for the health route, so the app can generate a
+    | URL with route('health-route').
+    |
+    */
+
+    'route_name' => env('HEALTH_ROUTE_ROUTE_NAME', 'health-route'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Extra middleware
+    |--------------------------------------------------------------------------
+    |
+    | Additional middleware classes or aliases to run on the health route,
+    | after this package's access middleware. Use this for throttle, or
+    | app-specific IP middleware.
+    |
+    */
+
+    'middleware' => array_values(array_filter(explode(',', (string) env('HEALTH_ROUTE_MIDDLEWARE', '')))),
+
+    /*
+    |--------------------------------------------------------------------------
     | Access control
     |--------------------------------------------------------------------------
     |
@@ -154,6 +187,12 @@ return [
     | than one is configured, passing any single one is enough to see the
     | full response. A caller that passes none of the configured methods
     | still receives the real HTTP status code, with no response body.
+    |
+    | Access control hides the response body. Configured checks still run
+    | for every request, so the status code stays accurate. Prefer not to
+    | enable outbound HTTP, cross-service, or composer-audit checks on an
+    | otherwise public URL. IP allowlists use $request->ip() and require
+    | a correct TrustProxies configuration.
     |
     */
 
@@ -191,6 +230,17 @@ return [
             'negative_cache_seconds' => env('HEALTH_ROUTE_DYNAMIC_IP_NEGATIVE_CACHE_SECONDS', 30),
         ],
 
+        // Replace or append to the bundled access gates (same contract as
+        // Checks: each class implements AccessGate). An empty list falls
+        // back to the bundled set.
+        'gates' => [
+            BasicAuthGate::class,
+            SharedSecretHeaderGate::class,
+            StaticIpAllowlistGate::class,
+            DynamicIpAllowlistGate::class,
+            LocalEnvironmentBypassGate::class,
+        ],
+
     ],
 
     /*
@@ -219,8 +269,12 @@ return [
     | plain "pong" response straight from the public directory - no
     | framework route, no config needed. Customise this if you like, but
     | don't set it to match the `path` above: that's the dynamic route,
-    | this is a separate, cheaper static check and the two are meant to
-    | coexist rather than replace one another.
+    | this is a separate, cheaper static check. A published file at the
+    | same public URI is served by the web server and bypasses Laravel
+    | (and this package's access control). The package logs a critical
+    | message at boot time if it detects the two collide - it does not
+    | refuse to boot, since that would take the whole app down over a
+    | static-file-publish-time misconfiguration, not just this route.
     |
     */
 

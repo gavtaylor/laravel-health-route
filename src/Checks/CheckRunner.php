@@ -40,24 +40,88 @@ final class CheckRunner
             return $this->runAll($checkClasses);
         }
 
-        /** @var list<array{name: string, status: string, message: string|null}> $cached */
-        $cached = $this->cache->remember(
-            'health-route.checks',
-            $ttl,
-            fn () => array_map(
-                fn (CheckResult $result) => $result->toArray(),
-                $this->runAll($checkClasses),
-            ),
-        );
+        $cacheKey = $this->cacheKey($checkClasses);
 
-        return array_map(
-            fn (array $result) => new CheckResult(
-                $result['name'],
-                CheckStatus::from($result['status']),
-                $result['message'],
-            ),
-            $cached,
-        );
+        $cached = $this->readCache($cacheKey);
+
+        if ($cached !== null) {
+            return $this->hydrate($cached, $checkClasses);
+        }
+
+        $results = $this->runAll($checkClasses);
+
+        $this->writeCache($cacheKey, $results, $ttl);
+
+        return $results;
+    }
+
+    /**
+     * @param  list<class-string<Check>>  $checkClasses
+     */
+    private function cacheKey(array $checkClasses): string
+    {
+        return 'health-route.checks.'.hash('xxh3', implode("\0", $checkClasses));
+    }
+
+    /**
+     * Read a previous run's cached results. Only cache I/O failures are
+     * caught here (e.g. the cache store itself being down) - never a
+     * check's own execution, which happens later in runAll() and must be
+     * free to propagate (in debug mode) exactly once.
+     *
+     * @return list<array{name: string, status: string, message: string|null}>|null
+     */
+    private function readCache(string $cacheKey): ?array
+    {
+        try {
+            /** @var list<array{name: string, status: string, message: string|null}>|null $cached */
+            $cached = $this->cache->get($cacheKey);
+
+            return $cached;
+        } catch (Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  list<CheckResult>  $results
+     */
+    private function writeCache(string $cacheKey, array $results, int $ttl): void
+    {
+        try {
+            $this->cache->put(
+                $cacheKey,
+                array_map(fn (CheckResult $result) => $result->toArray(), $results),
+                $ttl,
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * @param  list<array{name: string, status: string, message: string|null}>  $cached
+     * @param  list<class-string<Check>>  $checkClasses
+     * @return list<CheckResult>
+     */
+    private function hydrate(array $cached, array $checkClasses): array
+    {
+        try {
+            return array_map(
+                fn (array $result) => new CheckResult(
+                    $result['name'],
+                    CheckStatus::from($result['status']),
+                    $result['message'],
+                ),
+                $cached,
+            );
+        } catch (Throwable $e) {
+            report($e);
+
+            return $this->runAll($checkClasses);
+        }
     }
 
     /**

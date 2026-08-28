@@ -26,7 +26,10 @@ final class OutboundHttpCheck implements Check
         $timeout = (int) config('health-route.checks_config.outbound_http.timeout', 5);
 
         try {
-            $response = Http::timeout($timeout)->get($url);
+            $response = Http::timeout($timeout)
+                ->connectTimeout(min(3, $timeout))
+                ->withoutRedirecting()
+                ->get($url);
 
             if ($response->successful()) {
                 return CheckResult::up($this->name());

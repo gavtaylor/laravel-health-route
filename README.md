@@ -12,7 +12,7 @@ This package **is that same route** — same event, same failure contract, same 
 composer require gavtaylor/laravel-health-route
 ```
 
-The package auto-registers itself and serves `/up` immediately - no other setup is required. If your app still passes `health: '/up'` to `withRouting()` in `bootstrap/app.php`, remove it; this package logs a boot-time warning if it detects another route already registered at the same path.
+The package auto-registers itself and serves `/up` immediately - no other setup is required. If your app still passes `health: '/up'` to `withRouting()` in `bootstrap/app.php`, remove it; this package logs a boot-time warning if it detects another route already registered at the same path. The route is named `health-route` (`route('health-route')`).
 
 ## The HTML view
 
@@ -56,7 +56,7 @@ Register named checks that each independently report `up`, `degraded`, or `down`
 
 **A `degraded` check never fails the HTTP response** - only a `down` check does, using the configured `problem_status_code` (default `503`). This is the point of checks beyond a single up/down boolean: surface a real problem without paging on-call for something that isn't urgent.
 
-The JSON payload gains a `checks` array only when at least one check is configured, so the default response stays byte-for-byte identical to core:
+The JSON payload gains a `checks` array only when at least one check is configured, so the default response stays byte-for-byte identical to core. JSON is returned when the client asks for it (`Accept: application/json`, or `$this->getJson()` in tests), matching `$request->expectsJson()` in Laravel core. Anything else, including a missing or `*/*` Accept header, gets the HTML view.
 
 ```json
 {
@@ -77,13 +77,37 @@ All opt-in, none run unless listed in `checks` above:
 - `CacheReadWriteCheck` - writes then reads back a probe value from a cache store
 - `RedisCheck` - pings a Redis connection
 - `DiskSpaceCheck` - free disk space against configurable degraded/down thresholds
-- `OutboundHttpCheck` - probes a configured URL
+- `OutboundHttpCheck` - probes a configured URL (no redirects; connect timeout capped at 3s)
 - `PendingMigrationsCheck` - degrades when migrations haven't been run
 - `SchedulerLivenessCheck` - degrades/downs based on a heartbeat timestamp (see below)
-- `DependencyAdvisoryCheck` - wraps `composer audit`, cached far longer than other checks since it's expensive
-- `CrossServiceCheck` - probes another service's own health-style endpoint
+- `DependencyAdvisoryCheck` - wraps `composer audit`, cached far longer than other checks since it's expensive (requires `composer` on PATH)
+- `CrossServiceCheck` - probes another service's own health-style endpoint (`up` / `degraded` / `down`)
 
 Each check's tunables (connection names, thresholds, URLs) live under `checks_config` in the config file.
+
+Write your own check by implementing `GavTaylor\HealthRoute\Checks\Contracts\Check`. Never put exception messages, file paths, or stack traces in the result - the endpoint is public by default:
+
+```php
+use GavTaylor\HealthRoute\Checks\CheckResult;
+use GavTaylor\HealthRoute\Checks\Contracts\Check;
+
+final class QueueDepthCheck implements Check
+{
+    public function name(): string
+    {
+        return 'queue';
+    }
+
+    public function run(): CheckResult
+    {
+        if (/* the queue is too deep */) {
+            return CheckResult::degraded($this->name(), 'Queue depth is above the warning threshold.');
+        }
+
+        return CheckResult::up($this->name());
+    }
+}
+```
 
 #### Scheduler heartbeat
 
@@ -114,6 +138,10 @@ All credential/token comparisons are timing-safe. An unconfigured method never a
 
 A caller that fails every configured method still receives the real HTTP status code, with no response body - an unauthenticated monitor can learn "up or down," nothing more.
 
+**Configured checks still run** before the body is withheld, so the status code is accurate. Treat outbound HTTP, cross-service, and `composer audit` checks as side effects on every request to the path - not only authenticated ones.
+
+IP and hostname allowlists use `$request->ip()`. Configure [trusted proxies](https://laravel.com/docs/requests#configuring-trusted-proxies) correctly; a misconfigured proxy can make allowlists too wide or too narrow.
+
 ## Status header for other routes
 
 Attach a lightweight check-status header to any other route:
@@ -134,9 +162,11 @@ For a cheaper first-line check than booting the framework at all:
 php artisan vendor:publish --tag=health-route-static
 ```
 
-This publishes a static `public/ping` file - hit `/ping` and the web server replies `pong` directly, without booting Laravel at all. Never a registered framework route, and never written automatically at request or boot time. Re-running the publish command never overwrites a file you've already customised (standard `vendor:publish` behaviour) - use `--force` if you want to reset it.
+This publishes a static `public/ping` file - hit `/ping` and the web server replies `pong` directly, without booting Laravel at all. Never a registered framework route, never access-controlled by this package, and never written automatically at request or boot time. Use it as a cheap liveness probe and keep `/up` for readiness.
 
-Customise the filename via `static_filename` in the config file if you like, but don't set it to match `path` (the dynamic route) - most web servers serve an existing static file directly and would silently bypass the dynamic route entirely. The package logs a boot-time warning if it detects that.
+Customise the filename via `static_filename` if you like, but don't set it to match `path` (for example `up` vs `/up`): most web servers would serve the static file and silently bypass the dynamic route, including its access control. The package logs a critical message at boot time if it detects that - it's worth watching for in your logs, since nothing stops the app from booting.
+
+Re-running the publish command never overwrites a file you've already customised (standard `vendor:publish` behaviour) - use `--force` if you want to reset it.
 
 ## Testing
 

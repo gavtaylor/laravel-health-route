@@ -32,7 +32,10 @@ afterEach(function () {
     @unlink($this->logPath());
 });
 
-it('warns at boot time when static_filename matches the health route path', function () {
+it('logs critically at boot time when static_filename matches the health route path, and still boots', function () {
+    // Reaching this point at all proves the app booted successfully -
+    // an uncaught exception in a provider's boot() would have failed
+    // setUp() before the test body ever ran.
     expect(file_exists($this->logPath()))->toBeTrue();
 
     $log = file_get_contents($this->logPath());

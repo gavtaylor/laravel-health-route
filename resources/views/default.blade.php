@@ -56,9 +56,7 @@
                             <tr>
                                 <td class="px-6 py-3 text-gray-900">{{ $check->name }}</td>
                                 <td class="px-6 py-3">
-                                    <span @class([
-                                        'inline-flex items-center gap-2 text-gray-700',
-                                    ])>
+                                    <span class="inline-flex items-center gap-2 text-gray-700">
                                         <span @class([
                                             'h-2 w-2 rounded-full',
                                             'bg-green-400' => $check->status->value === 'up',

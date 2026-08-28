@@ -11,11 +11,11 @@ use GavTaylor\HealthRoute\Http\Controllers\HealthRouteController;
 use GavTaylor\HealthRoute\Http\Middleware\AddHealthStatusHeader;
 use GavTaylor\HealthRoute\Http\Middleware\EnsureHealthRouteAccess;
 use GavTaylor\HealthRoute\Support\RouteCollisionWarning;
+use GavTaylor\HealthRoute\Support\StaticFilenameCollision;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -67,17 +67,19 @@ final class HealthRouteServiceProvider extends ServiceProvider
 
         (new RouteCollisionWarning($this->app->make('router'), $path))->check();
 
-        $staticFilename = (string) config('health-route.static_filename', 'ping');
+        StaticFilenameCollision::check(
+            $path,
+            (string) config('health-route.static_filename', 'ping'),
+        );
 
-        if ($staticFilename === ltrim($path, '/')) {
-            Log::warning(sprintf(
-                'gavtaylor/laravel-health-route: static_filename ("%s") matches the health route path. '.
-                'If published, most web servers will serve that static file directly and silently bypass the dynamic route. Choose a different static_filename.',
-                $staticFilename,
-            ));
-        }
+        $middleware = array_values(array_filter([
+            EnsureHealthRouteAccess::class,
+            ...(array) config('health-route.middleware', []),
+        ]));
 
-        Route::get($path, HealthRouteController::class)->middleware(EnsureHealthRouteAccess::class);
+        Route::get($path, HealthRouteController::class)
+            ->middleware($middleware)
+            ->name((string) config('health-route.route_name', 'health-route'));
 
         PreventRequestsDuringMaintenance::except($path);
     }

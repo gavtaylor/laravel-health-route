@@ -21,6 +21,8 @@ abstract class TestCase extends Orchestra
     {
         $app['config']->set('app.debug', false);
         $app['config']->set('cache.default', 'array');
+        $app['config']->set('app.maintenance.driver', 'cache');
+        $app['config']->set('app.maintenance.store', 'array');
         $app['config']->set('logging.default', 'null');
         $app['config']->set('logging.channels.null', ['driver' => 'monolog', 'handler' => NullHandler::class]);
     }

@@ -6,6 +6,7 @@ use GavTaylor\HealthRoute\Checks\CheckResult;
 use GavTaylor\HealthRoute\Checks\CheckRunner;
 use GavTaylor\HealthRoute\Checks\CheckStatus;
 use GavTaylor\HealthRoute\Checks\Contracts\Check;
+use Illuminate\Contracts\Cache\Repository;
 
 it('returns an empty list when no checks are configured', function () {
     config(['health-route.checks' => []]);
@@ -51,6 +52,47 @@ it('caches results so a check only runs once within the cache window', function 
     expect(CountingCheck::$calls)->toBe(1);
 });
 
+it('runs checks uncached when reading the cache store fails', function () {
+    config(['health-route.checks' => [CountingCheck::class], 'health-route.checks_cache_seconds' => 60]);
+
+    CountingCheck::$calls = 0;
+
+    $cache = Mockery::mock(Repository::class);
+    $cache->shouldReceive('get')->once()->andThrow(new RuntimeException('cache connection refused'));
+    $cache->shouldReceive('put')->once();
+
+    $results = (new CheckRunner(app(), $cache))->run();
+
+    expect($results)->toHaveCount(1);
+    expect($results[0]->status)->toBe(CheckStatus::Up);
+    expect(CountingCheck::$calls)->toBe(1);
+});
+
+it('still returns results when writing to the cache store fails', function () {
+    config(['health-route.checks' => [CountingCheck::class], 'health-route.checks_cache_seconds' => 60]);
+
+    CountingCheck::$calls = 0;
+
+    $cache = Mockery::mock(Repository::class);
+    $cache->shouldReceive('get')->once()->andReturn(null);
+    $cache->shouldReceive('put')->once()->andThrow(new RuntimeException('cache connection refused'));
+
+    $results = (new CheckRunner(app(), $cache))->run();
+
+    expect($results)->toHaveCount(1);
+    expect($results[0]->status)->toBe(CheckStatus::Up);
+    expect(CountingCheck::$calls)->toBe(1);
+});
+
+it('executes a debug-mode check failure exactly once, without a duplicate rethrow via the cache layer', function () {
+    config(['app.debug' => true, 'health-route.checks' => [ThrowingRunnerCheck::class], 'health-route.checks_cache_seconds' => 60]);
+
+    ThrowingRunnerCheck::$calls = 0;
+
+    expect(fn () => app(CheckRunner::class)->run())->toThrow(RuntimeException::class);
+    expect(ThrowingRunnerCheck::$calls)->toBe(1);
+});
+
 it('runs fresh every time when caching is disabled', function () {
     config(['health-route.checks' => [CountingCheck::class], 'health-route.checks_cache_seconds' => 0]);
 
@@ -91,6 +133,8 @@ class AnotherPassingCheck implements Check
 
 class ThrowingRunnerCheck implements Check
 {
+    public static int $calls = 0;
+
     public function name(): string
     {
         return 'throwing';
@@ -98,6 +142,8 @@ class ThrowingRunnerCheck implements Check
 
     public function run(): CheckResult
     {
+        self::$calls++;
+
         throw new RuntimeException('permission denied reading /etc/shadow');
     }
 }

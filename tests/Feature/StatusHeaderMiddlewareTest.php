@@ -9,17 +9,17 @@ use Illuminate\Support\Facades\Route;
 it('adds no header when disabled', function () {
     config(['health-route.status_header.enabled' => false]);
 
-    Route::middleware('health-status')->get('/other', fn () => 'ok');
+    Route::middleware('health-status')->get('/health-status-disabled', fn () => 'ok');
 
-    $this->get('/other')->assertHeaderMissing('X-Health-Status');
+    $this->get('/health-status-disabled')->assertOk()->assertHeaderMissing('X-Health-Status');
 });
 
 it('adds the configured header when enabled', function () {
     config(['health-route.status_header.enabled' => true]);
 
-    Route::middleware('health-status')->get('/other', fn () => 'ok');
+    Route::middleware('health-status')->get('/health-status-enabled', fn () => 'ok');
 
-    $this->get('/other')->assertHeader('X-Health-Status', 'up');
+    $this->get('/health-status-enabled')->assertOk()->assertHeader('X-Health-Status', 'up');
 });
 
 it('reflects a down check in the header', function () {
@@ -28,9 +28,9 @@ it('reflects a down check in the header', function () {
         'health-route.checks' => [StatusHeaderDownCheckStub::class],
     ]);
 
-    Route::middleware('health-status')->get('/other', fn () => 'ok');
+    Route::middleware('health-status')->get('/health-status-down', fn () => 'ok');
 
-    $this->get('/other')->assertHeader('X-Health-Status', 'down');
+    $this->get('/health-status-down')->assertOk()->assertHeader('X-Health-Status', 'down');
 });
 
 it('only runs the check suite once within the cache window across multiple requests', function () {
