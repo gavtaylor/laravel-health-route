@@ -118,6 +118,32 @@ it('lists checks in the default HTML view', function () {
         ->assertSee('all good');
 });
 
+it('shows a dash for a check with no message in the HTML view, but keeps the JSON message null', function () {
+    config(['health-route.checks' => [NoMessageCheckStub::class]]);
+
+    $response = $this->get('/up');
+
+    $response->assertOk()->assertSee('stub-no-message');
+    expect($response->getContent())->toContain('>-</td>');
+
+    $this->getJson('/up')
+        ->assertOk()
+        ->assertJsonPath('checks.0.message', null);
+});
+
+class NoMessageCheckStub implements Check
+{
+    public function name(): string
+    {
+        return 'stub-no-message';
+    }
+
+    public function run(): CheckResult
+    {
+        return CheckResult::up($this->name());
+    }
+}
+
 class UpCheckStub implements Check
 {
     public function name(): string

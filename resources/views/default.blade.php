@@ -66,7 +66,7 @@
                                         {{ ucfirst($check->status->value) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-3 text-gray-500">{{ $check->message }}</td>
+                                <td class="px-6 py-3 text-gray-500">{{ $check->message ?? '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/gavtaylor/laravel-health-route/compare/v0.1.0...main)
 
+- New bundled checks: `StorageWritableCheck`, `LogWritableCheck`, `EnvironmentCheck`.
+- The default HTML view shows `-` for a check with no message, instead of an empty cell (JSON keeps `null`).
+
 ## [v0.1.0](https://github.com/gavtaylor/laravel-health-route/releases/tag/v0.1.0) - 2026-08-28
 
 Initial release. A drop-in replacement for Laravel's built-in health route (`health:` in `withRouting()`), with a customisable HTML view, a richer JSON contract, opt-in structured checks, and composable access control.

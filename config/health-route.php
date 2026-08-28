@@ -66,6 +66,9 @@ return [
         // \GavTaylor\HealthRoute\Checks\CacheReadWriteCheck::class,
         // \GavTaylor\HealthRoute\Checks\RedisCheck::class,
         // \GavTaylor\HealthRoute\Checks\DiskSpaceCheck::class,
+        // \GavTaylor\HealthRoute\Checks\StorageWritableCheck::class,
+        // \GavTaylor\HealthRoute\Checks\LogWritableCheck::class,
+        // \GavTaylor\HealthRoute\Checks\EnvironmentCheck::class,
         // \GavTaylor\HealthRoute\Checks\OutboundHttpCheck::class,
         // \GavTaylor\HealthRoute\Checks\PendingMigrationsCheck::class,
         // \GavTaylor\HealthRoute\Checks\SchedulerLivenessCheck::class,
@@ -106,6 +109,23 @@ return [
             // Percentage of disk space free below which the check degrades/goes down.
             'degraded_below_percent' => env('HEALTH_ROUTE_DISK_DEGRADED_BELOW_PERCENT', 15),
             'down_below_percent' => env('HEALTH_ROUTE_DISK_DOWN_BELOW_PERCENT', 5),
+        ],
+
+        'storage' => [
+            // Paths relative to storage_path() that must be writable.
+            'paths' => ['framework/cache', 'framework/sessions', 'framework/views'],
+        ],
+
+        'log' => [
+            // The log directory to check is writable, or null for the default.
+            'path' => env('HEALTH_ROUTE_LOG_PATH', storage_path('logs')),
+        ],
+
+        'environment' => [
+            // Environment variable names that must be present and non-empty.
+            'required_vars' => array_filter(explode(',', (string) env('HEALTH_ROUTE_ENVIRONMENT_REQUIRED_VARS', ''))),
+            // Environments allowed to have app.debug enabled - down outside these.
+            'debug_safe_environments' => array_filter(explode(',', (string) env('HEALTH_ROUTE_ENVIRONMENT_DEBUG_SAFE', 'local,testing'))),
         ],
 
         'outbound_http' => [

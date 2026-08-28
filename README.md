@@ -73,6 +73,8 @@ The JSON payload gains a `checks` array only when at least one check is configur
 
 No check leaks exception detail (messages, file paths, stack traces) into the response - the endpoint is public by default, and every response body should be treated as something an unauthenticated caller can read. Full detail always goes to your logger via `report()`, never to the HTTP response.
 
+A check's `message` can be `null` (e.g. an `up` result with nothing to add) - the JSON payload keeps it as `null`, while the default HTML view renders a `-` so the cell doesn't look broken.
+
 ### Bundled checks
 
 All opt-in, none run unless listed in `checks` above:
@@ -81,6 +83,9 @@ All opt-in, none run unless listed in `checks` above:
 - `CacheReadWriteCheck` - writes then reads back a probe value from a cache store
 - `RedisCheck` - pings a Redis connection
 - `DiskSpaceCheck` - free disk space against configurable degraded/down thresholds
+- `StorageWritableCheck` - confirms `storage/framework/{cache,sessions,views}` are actually writable, by writing and removing a probe file (not just inspecting permission bits)
+- `LogWritableCheck` - same writability probe, against the log directory
+- `EnvironmentCheck` - a configurable list of required environment variables are present, and that `app.debug` isn't accidentally enabled outside a configured "safe" environment (default `local`, `testing`)
 - `OutboundHttpCheck` - probes a configured URL (no redirects; connect timeout capped at 3s)
 - `PendingMigrationsCheck` - degrades when migrations haven't been run
 - `SchedulerLivenessCheck` - degrades/downs based on a heartbeat timestamp (see below)
