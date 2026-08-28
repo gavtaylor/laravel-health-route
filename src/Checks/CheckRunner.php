@@ -24,6 +24,8 @@ final class CheckRunner
      * take down the whole endpoint.
      *
      * @return list<CheckResult>
+     *
+     * @throws Throwable when a check fails and debug mode is enabled
      */
     public function run(): array
     {
@@ -105,6 +107,8 @@ final class CheckRunner
      * @param  list<array{name: string, status: string, message: string|null}>  $cached
      * @param  list<class-string<Check>>  $checkClasses
      * @return list<CheckResult>
+     *
+     * @throws Throwable when re-running falls back to a failing check in debug mode
      */
     private function hydrate(array $cached, array $checkClasses): array
     {
@@ -127,6 +131,8 @@ final class CheckRunner
     /**
      * @param  list<class-string<Check>>  $checkClasses
      * @return list<CheckResult>
+     *
+     * @throws Throwable when a check fails and debug mode is enabled
      */
     private function runAll(array $checkClasses): array
     {
@@ -138,6 +144,8 @@ final class CheckRunner
 
     /**
      * @param  class-string<Check>  $checkClass
+     *
+     * @throws Throwable when the check fails and debug mode is enabled
      */
     private function runOne(string $checkClass): CheckResult
     {

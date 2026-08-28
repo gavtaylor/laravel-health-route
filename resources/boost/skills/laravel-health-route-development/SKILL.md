@@ -1,15 +1,15 @@
 ---
 name: laravel-health-route-development
 description: >
-  Configure and apply the Health Route for Laravel package in Laravel applications.
+  Configure and apply the Health Route Extension for Laravel package in Laravel applications.
 license: MIT
 metadata:
   author: Gavin Taylor
 ---
 
-# Health Route for Laravel
+# Health Route Extension for Laravel
 
-Use this skill when a Laravel application needs to integrate the Health Route for Laravel package.
+Use this skill when a Laravel application needs to integrate the Health Route Extension for Laravel package.
 
 ## Primary Goal
 

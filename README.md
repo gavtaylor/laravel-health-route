@@ -1,4 +1,8 @@
-# Health Route for Laravel
+# Health Route Extension for Laravel
+
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/gavtaylor/laravel-health-route.svg?style=flat-square)](https://packagist.org/packages/gavtaylor/laravel-health-route)
+[![tests](https://github.com/gavtaylor/laravel-health-route/actions/workflows/tests.yml/badge.svg)](https://github.com/gavtaylor/laravel-health-route/actions/workflows/tests.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/gavtaylor/laravel-health-route.svg?style=flat-square)](https://packagist.org/packages/gavtaylor/laravel-health-route)
 
 A drop-in replacement for Laravel's built-in health route, with a customisable HTML view, a richer JSON contract, opt-in structured checks, and composable access control.
 
@@ -170,9 +174,7 @@ Re-running the publish command never overwrites a file you've already customised
 
 ## Testing
 
-```bash
-composer test
-```
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the full setup/lint/test workflow.
 
 ## Changelog
 
@@ -180,7 +182,7 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 
 ## Contributing
 
-Issues and pull requests are welcome.
+Issues and pull requests are welcome. As a native-focused, drop-in package, code changes are held to [Laravel's own coding standards](https://laravel.com/framework/docs/contributions#coding-style) - see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for details.
 
 ## Security Vulnerabilities
 

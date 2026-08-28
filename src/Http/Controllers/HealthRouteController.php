@@ -23,6 +23,10 @@ final class HealthRouteController
         //
     }
 
+    /**
+     * @throws Throwable when a DiagnosingHealth listener or a configured
+     *                   check fails and debug mode is enabled
+     */
     public function __invoke(Request $request): Response
     {
         $coreException = $this->diagnoseCoreHealth();
@@ -51,6 +55,8 @@ final class HealthRouteController
      * route: a listener fails the check by throwing. In debug mode the
      * exception propagates to the framework's own exception handler
      * instead of being caught here.
+     *
+     * @throws Throwable when a listener fails and debug mode is enabled
      */
     private function diagnoseCoreHealth(): ?Throwable
     {
