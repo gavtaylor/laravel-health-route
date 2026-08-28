@@ -75,6 +75,8 @@ No check leaks exception detail (messages, file paths, stack traces) into the re
 
 A check's `message` can be `null` (e.g. an `up` result with nothing to add) - the JSON payload keeps it as `null`, while the default HTML view renders a `-` so the cell doesn't look broken.
 
+Checks run and appear in the JSON payload in the order they're listed in `checks` above. The default HTML view instead sorts its table alphabetically by name, for easier scanning - this is presentational only and doesn't affect the JSON order or check execution order.
+
 ### Bundled checks
 
 All opt-in, none run unless listed in `checks` above:

@@ -131,6 +131,17 @@ it('shows a dash for a check with no message in the HTML view, but keeps the JSO
         ->assertJsonPath('checks.0.message', null);
 });
 
+it('sorts checks alphabetically by name in the HTML view, but keeps configured order in JSON', function () {
+    config(['health-route.checks' => [ZebraCheckStub::class, AlphaCheckStub::class]]);
+
+    $this->get('/up')->assertOk()->assertSeeInOrder(['alpha-check', 'zebra-check']);
+
+    $this->getJson('/up')
+        ->assertOk()
+        ->assertJsonPath('checks.0.name', 'zebra-check')
+        ->assertJsonPath('checks.1.name', 'alpha-check');
+});
+
 class NoMessageCheckStub implements Check
 {
     public function name(): string
@@ -193,5 +204,31 @@ class ThrowingCheckStub implements Check
     public function run(): CheckResult
     {
         throw new RuntimeException('could not open /etc/passwd');
+    }
+}
+
+class ZebraCheckStub implements Check
+{
+    public function name(): string
+    {
+        return 'zebra-check';
+    }
+
+    public function run(): CheckResult
+    {
+        return CheckResult::up($this->name());
+    }
+}
+
+class AlphaCheckStub implements Check
+{
+    public function name(): string
+    {
+        return 'alpha-check';
+    }
+
+    public function run(): CheckResult
+    {
+        return CheckResult::up($this->name());
     }
 }

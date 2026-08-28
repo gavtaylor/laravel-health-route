@@ -4,6 +4,7 @@
 
 - New bundled checks: `StorageWritableCheck`, `LogWritableCheck`, `EnvironmentCheck`.
 - The default HTML view shows `-` for a check with no message, instead of an empty cell (JSON keeps `null`).
+- The default HTML view sorts checks alphabetically by name; JSON keeps configured order.
 
 ## [v0.1.0](https://github.com/gavtaylor/laravel-health-route/releases/tag/v0.1.0) - 2026-08-28
 

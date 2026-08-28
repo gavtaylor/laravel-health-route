@@ -52,7 +52,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @foreach ($checks as $check)
+                        @foreach (collect($checks)->sortBy('name') as $check)
                             <tr>
                                 <td class="px-6 py-3 text-gray-900">{{ $check->name }}</td>
                                 <td class="px-6 py-3">
