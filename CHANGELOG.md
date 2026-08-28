@@ -1,14 +1,15 @@
 # Release Notes
 
-## [Unreleased](https://github.com/gavtaylor/laravel-health-route/compare/v0.1.0...1.x)
+## [Unreleased](https://github.com/gavtaylor/laravel-health-route/compare/v0.1.0...main)
 
-- Log a critical message at boot time when `static_filename` matches the health route path (published static files bypass Laravel access control).
-- Default published static liveness file is `public/ping` (`pong`).
-- Keep serving check results when the cache store used by `CheckRunner` is down.
-- Outbound HTTP probes no longer follow redirects; cross-service checks honour a remote `degraded` status.
-- Named route `health-route`, optional extra middleware, and a configurable access-gate list.
-- Document `@throws` on methods that can propagate an exception in debug mode, and require contributions to follow Laravel's own official coding standards (see `.github/CONTRIBUTING.md`).
+## [v0.1.0](https://github.com/gavtaylor/laravel-health-route/releases/tag/v0.1.0) - 2026-08-28
 
-## [v0.1.0](https://github.com/gavtaylor/laravel-health-route/compare/...v0.1.0) - 202x-xx-xx
+Initial release. A drop-in replacement for Laravel's built-in health route (`health:` in `withRouting()`), with a customisable HTML view, a richer JSON contract, opt-in structured checks, and composable access control.
 
-Initial pre-release.
+- Same `/up` default path, `DiagnosingHealth` event, and `{"status": "up"|"down"}` JSON contract as Laravel core - remove the package and add `health:` back to `withRouting()`, and a status-only client sees no change.
+- Customisable HTML view (`vendor:publish --tag=health-route-views`), zero config change required.
+- Named checks reporting `up`, `degraded`, or `down` - a `degraded` check never fails the HTTP response. Nine bundled checks (database, cache, Redis, disk space, outbound HTTP, pending migrations, scheduler liveness, dependency advisories, cross-service), all opt-in.
+- Five composable access-control methods (basic auth, shared-secret header, static IP/CIDR allowlist, dynamic DDNS hostname allowlist, local-environment bypass) plus a configurable/replaceable gate list for custom gates - public by default, matching core.
+- Optional static liveness file (`public/ping` → `pong`), never a registered framework route.
+- Optional status-header middleware for other routes, sharing the same check-result cache as the main endpoint.
+- Named route (`route('health-route')`) and boot-time warnings for a colliding `health:` route or a colliding static filename.
