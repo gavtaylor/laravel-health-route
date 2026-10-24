@@ -37,17 +37,22 @@ final class HealthRouteController
 
         $down = $coreException !== null || $anyCheckDown;
 
+        $maintenance = app()->isDownForMaintenance();
+
+        $maintenanceStatusCode = config('health-route.maintenance_status_code');
+
         $statusCode = match (true) {
             $coreException !== null => 500,
             $anyCheckDown => (int) config('health-route.problem_status_code', 503),
+            $maintenance && filled($maintenanceStatusCode) => (int) $maintenanceStatusCode,
             default => 200,
         };
 
         if ($request->expectsJson()) {
-            return $this->jsonResponse($down, $checks, $statusCode);
+            return $this->jsonResponse($down, $maintenance, $checks, $statusCode);
         }
 
-        return $this->htmlResponse($coreException, $down, $checks, $statusCode);
+        return $this->htmlResponse($coreException, $down, $maintenance, $checks, $statusCode);
     }
 
     /**
@@ -78,11 +83,17 @@ final class HealthRouteController
     /**
      * @param  list<CheckResult>  $checks
      */
-    private function jsonResponse(bool $down, array $checks, int $statusCode): Response
+    private function jsonResponse(bool $down, bool $maintenance, array $checks, int $statusCode): Response
     {
         $payload = [
             'status' => $down ? 'down' : 'up',
         ];
+
+        // Only present while in maintenance mode, so a live app still
+        // returns core's exact payload.
+        if ($maintenance) {
+            $payload['maintenance'] = true;
+        }
 
         if ($checks !== []) {
             $payload['checks'] = array_map(fn (CheckResult $check) => $check->toArray(), $checks);
@@ -94,12 +105,13 @@ final class HealthRouteController
     /**
      * @param  list<CheckResult>  $checks
      */
-    private function htmlResponse(?Throwable $exception, bool $down, array $checks, int $statusCode): Response
+    private function htmlResponse(?Throwable $exception, bool $down, bool $maintenance, array $checks, int $statusCode): Response
     {
         return response(
             View::make('health-route::default', [
                 'exception' => $exception,
                 'down' => $down,
+                'maintenance' => $maintenance,
                 'checks' => $checks,
             ])->render(),
             $statusCode,

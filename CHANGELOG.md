@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/gavtaylor/laravel-health-route/compare/v0.2.0...main)
 
+- New `maintenance_status_code` option (`HEALTH_ROUTE_MAINTENANCE_STATUS_CODE`): set it (e.g. `503`) to report maintenance mode from `/up`, which otherwise stays `200` during `php artisan down`, matching core. Checks still run either way.
+- The JSON payload adds `"maintenance": true` during maintenance mode, and the default HTML view says so (new `$maintenance` view variable). Outside maintenance mode the payload is unchanged.
+
 ## [v0.2.0](https://github.com/gavtaylor/laravel-health-route/compare/v0.1.0...v0.2.0) - 2026-08-28
 
 - New bundled checks: `StorageWritableCheck`, `LogWritableCheck`, `EnvironmentCheck`.

@@ -31,6 +31,10 @@
             <div class="ml-6">
                 <h2 class="text-xl font-semibold text-gray-900">Application {{ $down ? 'experiencing problems' : 'up' }}</h2>
 
+                @if ($maintenance)
+                    <p class="mt-2 text-sm font-medium text-amber-700">In maintenance mode: visitors can't use the application.</p>
+                @endif
+
                 <p class="mt-2 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
                     HTTP request received.
 

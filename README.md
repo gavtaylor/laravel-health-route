@@ -34,6 +34,7 @@ The view receives:
 |-------------|-------------------------|------------------------------------------------------------------|
 | `$exception` | `Throwable\|null`       | Set when a `DiagnosingHealth` listener threw (core's own failure mode) |
 | `$down`      | `bool`                  | Whether the overall response is reporting "down"                 |
+| `$maintenance` | `bool`                | Whether the application is in maintenance mode (`php artisan down`) |
 | `$checks`    | `list<CheckResult>`     | Every configured check's result (empty if none are configured)   |
 
 This is a public contract: once you've customised the view, treat changes to these variables as breaking changes.
@@ -123,6 +124,18 @@ final class QueueDepthCheck implements Check
 #### Scheduler heartbeat
 
 `SchedulerLivenessCheck` needs something to write a heartbeat. Set `checks_config.scheduler.register_heartbeat` to `true` and this package registers an `everyMinute()` scheduled task itself - or write to the same cache key yourself (`SchedulerLivenessCheck::HEARTBEAT_CACHE_KEY`) from your own scheduled command if you'd rather not use the bundled one. No scheduled job is *required* for any other feature in this package.
+
+## Maintenance mode
+
+Like Laravel core's route, `/up` stays reachable while the application is in maintenance mode (`php artisan down`) and returns `200` by default, so an orchestrator or load balancer doesn't restart or drop an app that is down on purpose. The JSON adds `"maintenance": true` while it lasts, and the HTML view says so; outside maintenance mode the payload is unchanged.
+
+If `/up` is what your uptime monitoring watches, report maintenance mode instead:
+
+```dotenv
+HEALTH_ROUTE_MAINTENANCE_STATUS_CODE=503
+```
+
+Every check still runs during maintenance, and `status` still says whether the app itself is healthy, so `{"status": "up", "maintenance": true}` with a `503` means it's safe to run `php artisan up`. A `down` check still takes precedence, returning `problem_status_code` as usual (and a failing `DiagnosingHealth` listener `500`).
 
 ## Access control
 

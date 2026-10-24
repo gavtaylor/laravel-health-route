@@ -52,6 +52,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maintenance status code
+    |--------------------------------------------------------------------------
+    |
+    | Laravel core keeps its health route reachable during maintenance mode
+    | (`php artisan down`), returning 200, so a deliberately-down app isn't
+    | restarted or pulled from a load balancer. This package does the same
+    | unless a status code (e.g. 503) is set here, which reports maintenance
+    | mode to uptime monitors instead. Either way, every check still runs
+    | and the JSON adds "maintenance": true, so "status" still says whether
+    | the app itself is healthy - the signal that `php artisan up` is safe.
+    |
+    */
+
+    'maintenance_status_code' => env('HEALTH_ROUTE_MAINTENANCE_STATUS_CODE'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Checks
     |--------------------------------------------------------------------------
     |
