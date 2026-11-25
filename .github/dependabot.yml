@@ -9,6 +9,16 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
+    # One PR for all minor and patch Actions bumps, so they can't fall behind
+    # each other: the auto-merge job's token can only merge a workflow change
+    # while the PR is up to date with main. Major bumps still come separately.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "composer"
     directory: "/"
